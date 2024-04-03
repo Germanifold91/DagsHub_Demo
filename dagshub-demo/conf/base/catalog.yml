@@ -1,0 +1,20 @@
+
+# ---------------------------------------------------------------------------------- RAW ---------------------------------------------------------------------------------------------
+heart_disease@pd:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/heart_disease_uci.csv
+  save_args:
+    sep: ','
+
+# ------------------------------------------------------------------------------ INTERMEDIATE ----------------------------------------------------------------------------------------
+sample_heart_disease@pd:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/sample_heart_disease_uci.csv
+  save_args:
+    sep: ','
+
+training_heart_disease@pd:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/training_heart_disease_uci.csv
+  save_args:
+    sep: ','
