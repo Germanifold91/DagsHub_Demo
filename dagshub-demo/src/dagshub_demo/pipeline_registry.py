@@ -1,12 +1,18 @@
 """Project pipelines."""
 
 from typing import Dict
+from platform import python_version
 
-from kedro.framework.project import find_pipelines
+
 from kedro.pipeline import Pipeline
+from kedro_mlflow.pipeline import pipeline_ml_factory
+from dagshub_demo import __version__ as PROJECT_VERSION
 
-from .pipelines.data_engineering import data_processing as data_egineering_pipeline
-from .pipelines.data_modeling import model_training as ml_training_pipeline
+
+from .pipelines.data_engineering.pipeline import (
+    data_processing as data_enginering_pipeline,
+)
+from .pipelines.data_modeling.pipeline import ml_pipeline as model_training_pipeline
 
 
 def register_pipelines() -> Dict[str, Pipeline]:
@@ -15,10 +21,32 @@ def register_pipelines() -> Dict[str, Pipeline]:
     Returns:
         A mapping from pipeline names to ``Pipeline`` objects.
     """
-    data_processing_pipeline = data_egineering_pipeline()
-    ml_pipeline = ml_training_pipeline()
+    data_processing_pipeline = data_enginering_pipeline()
+
+    ml_pipeline = model_training_pipeline()
+    data_transforming_pipeline = ml_pipeline.only_nodes_with_tags("data_transformation")
+    inference_pipeline = ml_pipeline.only_nodes_with_tags("inference")
+
+    training_pipeline_ml = pipeline_ml_factory(
+        training=ml_pipeline.only_nodes_with_tags("training"),
+        inference=inference_pipeline,
+        input_name="sample_heart_disease@pd",
+        log_model_kwargs=dict(
+            artifact_path="dagshub_demo",
+            conda_env={
+                "python": python_version(),
+                "build_dependencies": ["pip"],
+                "dependencies": [f"dagshub_demo=={PROJECT_VERSION}"],
+            },
+            signature="auto",
+        ),
+    )
     return {
         "data_processing": data_processing_pipeline,
-        "training": ml_pipeline,
-        "__default__": data_processing_pipeline + ml_pipeline,
+        "data_transforming": data_transforming_pipeline,
+        "training": training_pipeline_ml,
+        "__default__": data_processing_pipeline
+        + data_transforming_pipeline
+        + training_pipeline_ml
+        + inference_pipeline,
     }
