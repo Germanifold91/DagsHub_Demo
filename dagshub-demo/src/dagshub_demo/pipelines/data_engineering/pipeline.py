@@ -1,4 +1,4 @@
-"""Data Processing pipeline"""
+"""Data Processing pipeline."""
 
 from kedro.pipeline import Pipeline, node, pipeline
 from .data_processing import sample_df
