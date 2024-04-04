@@ -18,3 +18,28 @@ training_heart_disease@pd:
   filepath: data/02_intermediate/training_heart_disease_uci.csv
   save_args:
     sep: ','
+
+# ------------------------------------------------------------------------------- MODEL INPUT ----------------------------------------------------------------------------------------
+x_train@pd:
+  type: pandas.CSVDataset
+  filepath: data/03_model_input/x_train.csv
+  save_args:
+    sep: ','
+
+x_test@pd:
+  type: pandas.CSVDataset
+  filepath: data/03_model_input/x_test.csv
+  save_args:
+    sep: ','
+
+y_train@pd:
+  type: pandas.CSVDataset
+  filepath: data/03_model_input/y_train.csv
+  save_args:
+    sep: ','
+
+y_test@pd:
+  type: pandas.CSVDataset
+  filepath: data/03_model_input/y_test.csv
+  save_args:
+    sep: ','
