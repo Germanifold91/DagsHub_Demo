@@ -27,7 +27,7 @@ def sample_df(
         The original DataFrame with the sampled rows removed.
     """
 
-    data_frame = data_frame.drop("id", axis=1)
+    data_frame = data_frame.drop(["id", "dataset"], axis=1)
     print(f"Input DataFrame:\n{data_frame}")
     print(f"Sample size: {sample_size}")
 
