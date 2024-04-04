@@ -44,9 +44,15 @@ y_test@pd:
   save_args:
     sep: ','
 
-transformed_df@pd:
+training_transformed_df@pd:
   type: pandas.CSVDataset
-  filepath: data/03_model_input/transformed_df.csv
+  filepath: data/03_model_input/train_transformed_df.csv
+  save_args:
+    sep: ','
+
+test_transformed_df@pd:
+  type: pandas.CSVDataset
+  filepath: data/03_model_input/test_transformed_df.csv
   save_args:
     sep: ','
 
@@ -54,3 +60,38 @@ transformed_df@pd:
 transformer:
   type: pickle.PickleDataset
   filepath: data/06_models/transformer.pkl
+
+best_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/model.pkl
+
+# --------------------------------------------------------------------------- MODEL OUTPUT [METRICS] -------------------------------------------------------------------------------
+precision_weighted:
+    type: kedro_mlflow.io.metrics.MlflowMetricDataset
+    key: precision_weighted 
+
+f1_weighted:
+    type: kedro_mlflow.io.metrics.MlflowMetricDataset
+    key: f1_weighted
+
+recall_weighted:
+    type: kedro_mlflow.io.metrics.MlflowMetricDataset
+    key: recall_weighted
+
+accuracy:
+    type: kedro_mlflow.io.metrics.MlflowMetricDataset
+    key: accuracy
+
+# --------------------------------------------------------------------------- MODEL OUTPUT [ARTIFACTS] -----------------------------------------------------------------------------
+confusion_matrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: matplotlib.MatplotlibWriter
+    filepath: data/07_model_output/training_metrics/confusion_matrix.png
+
+# --------------------------------------------------------------------------- MODEL OUTPUT [PREDICTIONS] ---------------------------------------------------------------------------
+model_inference:
+  type: pandas.CSVDataset
+  filepath: data/07_model_output/model_inference.csv
+  save_args:
+    sep: ','

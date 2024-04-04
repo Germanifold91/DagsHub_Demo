@@ -23,3 +23,10 @@ data_transform:
     - oldpeak
     - ca
     - thalch
+  impute_strategy_num: mean
+
+modeling:
+  random_state: 42
+  num_iter: 50
+  num_folds: 10
+  scoring: precision_weighted
