@@ -43,3 +43,14 @@ y_test@pd:
   filepath: data/03_model_input/y_test.csv
   save_args:
     sep: ','
+
+transformed_df@pd:
+  type: pandas.CSVDataset
+  filepath: data/03_model_input/transformed_df.csv
+  save_args:
+    sep: ','
+
+# ---------------------------------------------------------------------------------- MODEL -----------------------------------------------------------------------------------------
+transformer:
+  type: pickle.PickleDataset
+  filepath: data/06_models/transformer.pkl

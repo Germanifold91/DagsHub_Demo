@@ -6,3 +6,20 @@ data_split:
   test_size: 0.1
   random_state: 42
   target_column: num
+
+data_transform:
+  categorical_cols:
+    - sex
+    - cp
+    - fbs
+    - restecg
+    - exang
+    - slope
+    - thal
+  numerical_cols:
+    - age
+    - trestbps
+    - chol
+    - oldpeak
+    - ca
+    - thalch
