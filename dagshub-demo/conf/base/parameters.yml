@@ -23,10 +23,11 @@ data_transform:
     - oldpeak
     - ca
     - thalch
-  impute_strategy_num: mean
+  impute_strategy_num: knn # Options: mean, median, knn
 
 modeling:
+  model_type: random_forest # Options: random_forest, logistic_regression, k_neighbors 
   random_state: 42
-  num_iter: 50
-  num_folds: 10
-  scoring: precision_weighted
+  num_iter: 100
+  num_folds: 5
+  scoring: accuracy
