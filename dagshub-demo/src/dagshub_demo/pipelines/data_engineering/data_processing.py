@@ -33,7 +33,8 @@ def sample_df(
 
     if sample_size > int(len(data_frame) * 0.2):
         print(
-            f"Sample size was greater than 20% of the DataFrame, capping at {int(len(data_frame) * 0.2)}"
+            f"Sample size was greater than 20% of the DataFrame,\
+                capping at {int(len(data_frame) * 0.2)}"
         )
         sample_size = int(len(data_frame) * 0.2)
 

@@ -1,6 +1,7 @@
 """dagshub_demo file for ensuring the package is executable
 as `dagshub-demo` and `python -m dagshub_demo`
 """
+
 import importlib
 from pathlib import Path
 

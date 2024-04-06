@@ -1,7 +1,12 @@
 """Modeling pipeline."""
 
 from kedro.pipeline import Pipeline, node
-from .data_training import split_data, data_transform, train_model, evaluate_model
+from .data_training import (
+    split_data,
+    data_transform,
+    train_model,
+    evaluate_model,
+)
 from .inference import predict_model
 
 
@@ -57,7 +62,7 @@ def ml_pipeline(**kwargs) -> Pipeline:
             node(
                 func=predict_model,
                 inputs=["best_model", "transformer", "sample_heart_disease@pd"],
-                outputs="predictions",
+                outputs="model_inference",
                 name="model_inference",
                 tags=["inference"],
             ),
