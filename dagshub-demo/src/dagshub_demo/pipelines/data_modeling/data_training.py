@@ -8,10 +8,12 @@ import itertools
 from typing import Tuple, Dict, Any
 
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.impute import SimpleImputer
+from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import (
     accuracy_score,
@@ -31,7 +33,8 @@ def split_data(
 
     Args:
         data_frame (pd.DataFrame): The input data frame.
-        params (Dict[str, Any]): The parameters containing target column, test size, and random state.
+        params (Dict[str, Any]): The parameters containing target column,
+        test size, and random state.
 
     Returns:
         Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: The split data frames and series.
@@ -57,105 +60,137 @@ def data_transform(
     training_data: pd.DataFrame, test_data: pd.DataFrame, params: Dict[str, Any]
 ) -> Tuple[pd.DataFrame, pd.DataFrame, ColumnTransformer]:
     """
-    Transforms the training data by encoding categorical features and scaling numerical features,
-    and imputing missing values. Returns the transformed data as a Pandas DataFrame and the fitted ColumnTransformer.
+    Transforms the training and test data by encoding categorical features, scaling numerical features,
+    and imputing missing values using a specified strategy. Supports KNN imputation for numerical columns.
 
     Parameters:
-    - training_data: pd.DataFrame - The input dataframe.
-    - params: Dict[str, Any] - Parameters including 'categorical_cols' and 'numerical_cols' lists.
+    - training_data: pd.DataFrame - The input training dataframe.
+    - test_data: pd.DataFrame - The input test dataframe.
+    - params: Dict[str, Any] - Parameters including 'categorical_cols', 'numerical_cols', and 'impute_strategy_num'.
 
     Returns:
-    - Tuple[pd.DataFrame, ColumnTransformer]: The transformed DataFrame and the fitted ColumnTransformer.
+    - Tuple[pd.DataFrame, pd.DataFrame, ColumnTransformer]: The transformed training and test DataFrames and the fitted ColumnTransformer.
     """
-    # Extract column lists from parameters
     categorical_cols = params["categorical_cols"]
     numerical_cols = params["numerical_cols"]
-    imputer_strategy_num = params["imputer_strategy"]
+    impute_strategy_num = params["impute_strategy_num"]
 
-    # Define imputers for numerical and categorical columns
-    numerical_imputer = SimpleImputer(strategy=imputer_strategy_num)
+    # Determine the imputer for numerical columns based on the specified strategy
+    if impute_strategy_num == "knn":
+        numerical_imputer = KNNImputer()
+    else:
+        numerical_imputer = SimpleImputer(strategy=impute_strategy_num)
+
     categorical_imputer = SimpleImputer(strategy="most_frequent")
 
-    # Define transformations for the numerical and categorical columns
     categorical_transformer = Pipeline(
-        steps=[
-            ("imputer", categorical_imputer),  # First impute missing values
-            ("encoder", OneHotEncoder(handle_unknown="ignore")),  # Then encode
-        ]
-    )
-    numerical_transformer = Pipeline(
-        steps=[
-            ("imputer", numerical_imputer),  # First impute missing values
-            ("scaler", StandardScaler()),  # Then scale
+        [
+            ("imputer", categorical_imputer),
+            ("encoder", OneHotEncoder(handle_unknown="ignore")),
         ]
     )
 
-    # Combine transformers in a ColumnTransformer
+    numerical_transformer = Pipeline(
+        [
+            ("imputer", numerical_imputer),
+            ("scaler", StandardScaler()),
+        ]
+    )
+
     preprocessor = ColumnTransformer(
-        transformers=[
+        [
             ("numerical", numerical_transformer, numerical_cols),
             ("categorical", categorical_transformer, categorical_cols),
         ],
         remainder="drop",
     )
 
-    # Fit the preprocessor to the training data
     preprocessor.fit(training_data)
 
-    # Transform data
     train_transformed = preprocessor.transform(training_data)
     test_transformed = preprocessor.transform(test_data)
 
-    # Generate column names for the transformed DataFrame
     new_categorical_features = preprocessor.named_transformers_["categorical"][
         "encoder"
     ].get_feature_names_out(categorical_cols)
-    new_columns = (
-        numerical_cols + new_categorical_features.tolist()
-    )  # Concatenate numerical and new categorical column names
+    new_columns = numerical_cols + new_categorical_features.tolist()
     new_columns = [col.replace(" ", "_") for col in new_columns]
-    # Convert the transformed data back to a DataFrame
-    train_transformed = pd.DataFrame(
+
+    train_transformed_df = pd.DataFrame(
         train_transformed, columns=new_columns, index=training_data.index
     )
-    test_transformed = pd.DataFrame(
+    test_transformed_df = pd.DataFrame(
         test_transformed, columns=new_columns, index=test_data.index
     )
 
-    return train_transformed, test_transformed, preprocessor
+    return train_transformed_df, test_transformed_df, preprocessor
+
+
+def configure_model(model_type: str, random_state: int) -> Tuple[Any, Dict[str, list]]:
+    """
+    Configures a machine learning model and its hyperparameter search space.
+
+    Parameters:
+    - model_type: The type of model to configure ('random_forest',
+                 'logistic_regression', 'k_neighbors').
+    - random_state: A seed for random number generation to ensure reproducibility.
+
+    Returns:
+    - A tuple containing the configured model and its hyperparameter space.
+    """
+    if model_type == "random_forest":
+        model = RandomForestClassifier(random_state=random_state)
+        param_distributions = {
+            "n_estimators": [100, 200, 300, 400, 500],
+            "max_depth": [None, 10, 20, 30, 40, 50],
+            "min_samples_split": [2, 5, 10],
+            "min_samples_leaf": [1, 2, 4],
+        }
+    elif model_type == "logistic_regression":
+        model = LogisticRegression(
+            random_state=random_state, multi_class="multinomial", max_iter=1000
+        )
+        param_distributions = {
+            "C": [0.001, 0.01, 0.1, 1, 10, 100],
+            "solver": ["newton-cg", "lbfgs", "sag", "saga"],
+        }
+    elif model_type == "k_neighbors":
+        model = KNeighborsClassifier()
+        param_distributions = {
+            "n_neighbors": [3, 5, 7, 9, 11],
+            "weights": ["uniform", "distance"],
+            "algorithm": ["auto", "ball_tree", "kd_tree", "brute"],
+        }
+    else:
+        raise ValueError(f"Unsupported model type: {model_type}")
+
+    return model, param_distributions
 
 
 def train_model(
     X_train_transformed: pd.DataFrame,
     y_train: pd.Series,
     params: Dict[str, Any],
-) -> RandomForestClassifier:
+) -> Any:
     """
-    Trains a RandomForest Classifier on pre-split training data with hyperparameter tuning using Randomized Search.
+    Trains a specified model on pre-split training data with hyperparameter tuning using Randomized Search.
 
     Parameters:
     - X_train_transformed: Training features DataFrame.
     - y_train: Training target Series.
-    - params: Parameters including 'random_state', 'num_iter', 'num_folds', and 'scoring'.
+    - params: Parameters including 'model_type', 'random_state', 'num_iter', 'num_folds', and 'scoring'.
 
     Returns:
-    - A tuple containing the best model from RandomizedSearchCV and the best hyperparameters.
+    - The best model from RandomizedSearchCV.
     """
-    random_state = params["random_state"]
+    model_type = params["model_type"]
+    random_state = params.get("random_state", 42)
     num_iter = params["num_iter"]
     num_folds = params["num_folds"]
     scoring_metric = params["scoring"]
 
-    # Define the model
-    model = RandomForestClassifier(random_state=random_state)
-
-    # Hyperparameter space to explore
-    param_distributions = {
-        "n_estimators": [100, 200, 300, 400, 500],
-        "max_depth": [None, 10, 20, 30, 40, 50],
-        "min_samples_split": [2, 5, 10],
-        "min_samples_leaf": [1, 2, 4],
-    }
+    # Configure the model and its hyperparameter space
+    model, param_distributions = configure_model(model_type, random_state)
 
     # Set up Randomized Search
     random_search = RandomizedSearchCV(
@@ -175,7 +210,7 @@ def train_model(
     # Best model
     best_model = random_search.best_estimator_
 
-    print(f"Best Hyperparameters: {random_search.best_params_}")
+    print(f"Best Hyperparameters for {model_type}: {random_search.best_params_}")
 
     return best_model
 
