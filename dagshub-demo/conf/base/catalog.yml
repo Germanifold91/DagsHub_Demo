@@ -95,3 +95,17 @@ model_inference:
   filepath: data/07_model_output/model_inference.csv
   save_args:
     sep: ','
+
+# ---------------------------------------------------------------------------------- MLFLOW PIPELINE -------------------------------------------------------------------------------
+pipeline_inference_model:
+  type: kedro_mlflow.io.models.MlflowModelTrackingDataset
+  flavor: mlflow.pyfunc
+  pyfunc_workflow: python_model
+  artifact_path: dagshub_demo  # the name of your mlflow folder = the model_name in pipeline_ml_factory
+  run_id: f1be78c4f46343e1b5dd0b01939cb800  # put it in globals.yml to help people find out what to modify
+
+predictions_mlflow:
+  type: pandas.CSVDataset
+  filepath: data/07_model_output/predictions.csv
+  save_args:
+    sep: ','
