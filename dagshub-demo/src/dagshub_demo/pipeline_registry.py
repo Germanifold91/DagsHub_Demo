@@ -26,7 +26,7 @@ def register_pipelines() -> Dict[str, Pipeline]:
     """
     data_processing_pipeline = data_enginering_pipeline()
     ml_pipeline = model_training_pipeline()
-    data_transforming_pipeline = ml_pipeline.only_nodes_with_tags("data_transformation")
+    data_transforming_pipeline = ml_pipeline.only_nodes_with_tags("data_transforming")
     inference_pipeline = ml_pipeline.only_nodes_with_tags("inference")
 
     training_pipeline_ml = pipeline_ml_factory(
