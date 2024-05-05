@@ -15,7 +15,7 @@ def ml_pipeline(**kwargs) -> Pipeline:
         [
             node(
                 func=split_data,
-                inputs=["heart_disease@pd", "params:data_split"],
+                inputs=["training_heart_disease@pd", "params:data_split"],
                 outputs=["x_train@pd", "x_test@pd", "y_train@pd", "y_test@pd"],
                 name="data_split",
                 tags=["data_transforming"],
